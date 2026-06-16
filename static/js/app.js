@@ -9,7 +9,8 @@ const state = {
     selectedUpdate: null,
     theme: 'dark',
     includeLink: true,
-    includeHashtags: true
+    includeHashtags: true,
+    activeTimeframe: 'all'
 };
 
 // ==========================================================================
@@ -28,6 +29,7 @@ const elements = {
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
     categoryFilters: document.getElementById('category-filters'),
+    timeframeFilters: document.getElementById('timeframe-filters'),
     timelineLoading: document.getElementById('timeline-loading'),
     timelineError: document.getElementById('timeline-error'),
     timelineEmpty: document.getElementById('timeline-empty'),
@@ -186,10 +188,33 @@ function showError(msg) {
 function filterAndRenderTimeline() {
     const query = state.searchQuery.toLowerCase().trim();
     const activeCat = state.activeCategory.toLowerCase();
+    const activeDays = state.activeTimeframe;
     
     const filtered = [];
     
+    // Date math helper
+    const getDaysDifference = (rawDateStr) => {
+        if (!rawDateStr) return 0;
+        const entryDate = new Date(rawDateStr);
+        entryDate.setHours(0, 0, 0, 0);
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = today - entryDate;
+        return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    };
+    
     for (const dayEntry of state.releases) {
+        // Timeframe check
+        if (activeDays !== 'all') {
+            const daysLimit = parseInt(activeDays);
+            const diffDays = getDaysDifference(dayEntry.raw_date);
+            if (diffDays > daysLimit) {
+                continue; // Skip this day completely
+            }
+        }
+        
         const matchingUpdates = [];
         
         for (const update of dayEntry.updates) {
@@ -377,6 +402,24 @@ function setupEventListeners() {
         
         // Set state and render
         state.activeCategory = pill.dataset.category;
+        filterAndRenderTimeline();
+    });
+    
+    // Timeframe filter pills
+    elements.timeframeFilters.addEventListener('click', (e) => {
+        const pill = e.target.closest('.filter-pill');
+        if (!pill) return;
+        
+        // Remove active class from all pills
+        elements.timeframeFilters.querySelectorAll('.filter-pill').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Add active class to clicked pill
+        pill.classList.add('active');
+        
+        // Set state and render
+        state.activeTimeframe = pill.dataset.days;
         filterAndRenderTimeline();
     });
     
