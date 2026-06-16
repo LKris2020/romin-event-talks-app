@@ -20,6 +20,7 @@ const elements = {
     themeToggle: document.getElementById('theme-toggle'),
     refreshBtn: document.getElementById('refresh-btn'),
     refreshSpinner: document.getElementById('refresh-spinner'),
+    exportBtn: document.getElementById('export-btn'),
     statusSource: document.getElementById('status-source'),
     statusTime: document.getElementById('status-time'),
     statusWarningContainer: document.getElementById('status-warning-container'),
@@ -330,6 +331,9 @@ function setupEventListeners() {
     // Refresh button
     elements.refreshBtn.addEventListener('click', () => loadReleases(true));
     
+    // Export button
+    elements.exportBtn.addEventListener('click', exportToCSV);
+    
     // Retry button on error page
     elements.retryBtn.addEventListener('click', () => loadReleases(true));
     
@@ -568,4 +572,59 @@ function updateCharCount() {
     } else if (count > 250) {
         elements.charCounter.classList.add('warning');
     }
+}
+
+// ==========================================================================
+// CSV Export Utility
+// ==========================================================================
+function exportToCSV() {
+    if (state.filteredReleases.length === 0) {
+        showToast('No releases available to export.');
+        return;
+    }
+    
+    // CSV Columns
+    const headers = ['Date', 'Category', 'Description', 'Permalink'];
+    const csvRows = [];
+    
+    // Add header row
+    csvRows.push(headers.join(','));
+    
+    // Process filtered release notes
+    state.filteredReleases.forEach(day => {
+        day.updates.forEach(update => {
+            // Helper to escape double quotes and wrap in quotes
+            const formatCell = (val) => {
+                const escaped = val.replace(/"/g, '""');
+                return `"${escaped}"`;
+            };
+            
+            const row = [
+                formatCell(day.date),
+                formatCell(update.category),
+                formatCell(update.text),
+                formatCell(day.link)
+            ];
+            
+            csvRows.push(row.join(','));
+        });
+    });
+    
+    // Compile CSV and trigger download
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.setAttribute('download', `bigquery_releases_${dateStr}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('CSV exported successfully!');
 }
