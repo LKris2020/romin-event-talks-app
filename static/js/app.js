@@ -17,7 +17,7 @@ const state = {
 // ==========================================================================
 const elements = {
     body: document.body,
-    themeToggle: document.getElementById('theme-toggle'),
+    themeSwitchInput: document.getElementById('theme-switch-input'),
     refreshBtn: document.getElementById('refresh-btn'),
     refreshSpinner: document.getElementById('refresh-spinner'),
     exportBtn: document.getElementById('export-btn'),
@@ -78,9 +78,15 @@ function applyTheme() {
     if (state.theme === 'dark') {
         elements.body.classList.add('dark-theme');
         elements.body.classList.remove('light-theme');
+        if (elements.themeSwitchInput) {
+            elements.themeSwitchInput.checked = false;
+        }
     } else {
         elements.body.classList.remove('dark-theme');
         elements.body.classList.add('light-theme');
+        if (elements.themeSwitchInput) {
+            elements.themeSwitchInput.checked = true;
+        }
     }
     localStorage.setItem('theme', state.theme);
 }
@@ -325,8 +331,8 @@ function getCategoryIcon(category) {
 // Event Listeners & Handlers
 // ==========================================================================
 function setupEventListeners() {
-    // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
+    // Theme toggle switch
+    elements.themeSwitchInput.addEventListener('change', toggleTheme);
     
     // Refresh button
     elements.refreshBtn.addEventListener('click', () => loadReleases(true));
